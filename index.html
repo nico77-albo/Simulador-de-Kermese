@@ -1,0 +1,980 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simulador de Presupuesto - Luna Morena Eventos</title>
+    <style>
+        /* Paleta de colores pastel y profesional */
+        :root {
+            --primary-color: #FFFFFF; /* Blanco */
+            --secondary-color: #FFFFFF; /* Blanco */
+            --accent-color: #A2D2FF; /* Azul claro pastel */
+            --text-dark: #333333;
+            --text-light: #666666;
+            --background-light: #FFC0CB; /* Rosa pastel */
+            --background-dark: #FFB6C1; /* Rosa un poco más oscuro */
+            --border-color: #B19CD9; /* Lila */
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, var(--background-light) 0%, var(--background-dark) 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background-color: var(--background-light); /* Rosa pastel sólido */
+            color: var(--text-dark); /* Texto oscuro para el encabezado */
+            padding: 30px;
+            text-align: center;
+            position: relative;
+        }
+
+        .logo-container {
+            margin-bottom: 10px;
+            display: flex;
+            justify-content: center; /* Centrar el logo */
+        }
+
+        .logo-container img {
+            max-width: 300px; /* Ajusta el tamaño del logo según sea necesario */
+            height: auto;
+            display: block; /* Asegura que la imagen sea un bloque para centrarla correctamente */
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.9;
+            color: var(--text-dark); /* Color más oscuro para el subtítulo */
+            margin-top: 10px; /* Espacio entre logo y subtitulo */
+        }
+
+        .tabs {
+            display: none;
+            background: var(--background-dark);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .tabs.admin-mode {
+            display: flex;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: var(--text-light);
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: var(--accent-color); /* Usamos accent-color para el tab activo */
+            color: white;
+            transform: translateY(-2px);
+        }
+
+        .tab:hover:not(.active) {
+            background: var(--border-color);
+            color: var(--text-dark);
+        }
+
+        .admin-access {
+            position: fixed; /* Mantenemos fijo para que esté por encima */
+            top: 20px;
+            right: 20px;
+            background: rgba(var(--accent-color-rgb), 0.1); /* Usamos accent-color para el background */
+            border: 1px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 10px;
+            z-index: 1000; /* Asegura que esté por encima de otros elementos */
+        }
+
+        .admin-access input {
+            padding: 8px;
+            border: 1px solid var(--accent-color);
+            border-radius: 4px;
+            margin-right: 10px;
+            width: 120px;
+        }
+
+        .admin-access button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+
+        .admin-access button:hover {
+            background: var(--primary-color); /* Blanco al pasar el ratón */
+            color: var(--text-dark); /* Texto oscuro para que se vea sobre blanco */
+        }
+
+        .tab-content {
+            display: none;
+            padding: 40px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        /* El cuadro de adicionales ocupa 3 columnas en computadoras */
+        .form-group.adicionales-full-width {
+            grid-column: span 3; /* Ocupa 3 columnas */
+        }
+
+        .form-group {
+            background: var(--background-dark);
+            padding: 25px;
+            border-radius: 10px;
+            border-left: 4px solid var(--accent-color); /* Usamos accent-color para el borde izquierdo */
+        }
+
+        .form-group h3 {
+            color: var(--text-dark); /* Títulos de los cuadros en negro */
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text-dark);
+        }
+
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+            color: var(--text-dark);
+        }
+
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 3px rgba(var(--accent-color-rgb), 0.1);
+        }
+
+        /* Adicionales en 3 columnas para PC, 1 para móvil */
+        #adicionales-list {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr); /* 3 columnas por defecto */
+            gap: 15px;
+        }
+
+        @media (max-width: 768px) {
+            #adicionales-list {
+                grid-template-columns: 1fr; /* 1 columna en móvil */
+            }
+            .form-group.adicionales-full-width {
+                grid-column: span 1; /* En móvil, vuelve a ocupar 1 columna */
+            }
+        }
+
+        .adicional-field {
+            display: none; /* Hidden by default */
+        }
+
+        .budget-result {
+            background-color: var(--background-light); /* Rosa pastel sólido */
+            color: var(--text-dark);
+            padding: 40px;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 30px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.1); /* Sombra más suave */
+            /* Eliminado el linear-gradient para color sólido */
+        }
+
+        .budget-result h2 {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.1);
+            color: var(--text-dark); /* Color del texto oscuro para que se vea sobre fondo blanco */
+        }
+
+        .config-table {
+            background: white;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+        }
+
+        .config-table table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .config-table th {
+            background: var(--accent-color); /* Usamos accent-color para los encabezados de tabla */
+            color: white;
+            padding: 20px;
+            text-align: left;
+            font-weight: 600;
+        }
+
+        .config-table td {
+            padding: 15px 20px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .config-table tr:hover {
+            background: var(--background-dark);
+        }
+
+        .config-table input {
+            width: 100%;
+            padding: 8px 12px;
+            border: 1px solid var(--border-color);
+            border-radius: 5px;
+            font-size: 14px;
+        }
+
+        .config-table input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 2px rgba(var(--accent-color-rgb), 0.1);
+        }
+
+        .editable-tag {
+            background: #28a745; /* Verde para editable (mantengo este color para que resalte) */
+            color: white;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            margin-left: 10px;
+        }
+
+        /* Ocultar las descripciones de las propuestas */
+        .proposal-details {
+            display: none;
+        }
+
+        .admin-buttons {
+            text-align: right;
+            padding: 20px 40px 0;
+        }
+
+        .admin-buttons button {
+            background: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin-left: 10px;
+            transition: background 0.3s ease;
+        }
+
+        .admin-buttons button:hover {
+            background: var(--primary-color); /* Blanco al pasar el ratón */
+            color: var(--text-dark); /* Texto oscuro para que se vea sobre blanco */
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .budget-breakdown {
+                grid-template-columns: 1fr;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+
+            .admin-buttons {
+                text-align: center;
+                padding: 20px;
+            }
+            .admin-buttons button {
+                margin: 5px;
+                width: calc(100% - 10px);
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="admin-access" id="admin-access-box">
+        <input type="password" id="admin-password" placeholder="Código admin">
+        <button onclick="checkAdminAccess()">Acceder</button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div class="logo-container">
+                <img src="LogoLME1-removebg-preview.png" alt="Luna Morena Eventos Logo">
+            </div>
+            <div class="subtitle">Simulador de Presupuesto para Kermeses</div>
+        </div>
+
+        <div class="admin-buttons" id="admin-header-buttons" style="display: none;">
+            <button onclick="logoutAdmin()">Cerrar Sesión</button>
+        </div>
+
+        <div class="tabs" id="tabs">
+            <button class="tab active" onclick="switchTab('cliente')">👥 Simulador Cliente</button>
+            <button class="tab" onclick="switchTab('config')">⚙️ Configuración Interna</button>
+        </div>
+
+        <div id="cliente" class="tab-content active">
+            <div class="form-grid">
+                <div class="form-group">
+                    <h3>📋 Propuesta</h3>
+                    <label for="propuesta">Selecciona la propuesta:</label>
+                    <select id="propuesta" onchange="calculateBudget(); updateAdicionalesVisibility();">
+                        <option value="">Selecciona una propuesta</option>
+                        <option value="1">Kermese de Ensueño</option>
+                        <option value="2">Kermese Mágica</option>
+                        <option value="3">Kermese Estelar</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <h3>👥 Invitados</h3>
+                    <label for="invitados">Cantidad de invitados:</label>
+                    <input type="number" id="invitados" min="1" placeholder="Ej: 50" onchange="calculateBudget();">
+                </div>
+
+                <div class="form-group">
+                    <h3>🪜 Armado</h3>
+                    <label for="escalera">¿Armado por escalera?</label>
+                    <select id="escalera" onchange="calculateBudget();">
+                        <option value="no">No</option>
+                        <option value="si">Sí</option>
+                    </select>
+                </div>
+
+                <div class="form-group adicionales-full-width"> <h3>🎪 Adicionales</h3>
+                    <div id="adicionales-list">
+                        <div class="adicional-field" id="adicional-juego-inflable">
+                            <label for="juego-inflable">Juego inflable:</label>
+                            <select id="juego-inflable" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-maquillaje">
+                            <label for="maquillaje">Maquillaje artístico:</label>
+                            <select id="maquillaje" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-algodon-azucar">
+                            <label for="algodon-azucar">Stand algodón de azúcar:</label>
+                            <select id="algodon-azucar" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-show-burbujas">
+                            <label for="show-burbujas">Show burbujas:</label>
+                            <select id="show-burbujas" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-show-magia">
+                            <label for="show-magia">Show magia:</label>
+                            <select id="show-magia" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-glitter-strass">
+                            <label for="glitter-strass">Glitter Strass:</label>
+                            <select id="glitter-strass" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-pelocos">
+                            <label for="pelocos">Pelocos:</label>
+                            <select id="pelocos" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-metegol">
+                            <label for="metegol">Metegol:</label>
+                            <select id="metegol" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-tejo-aire">
+                            <label for="tejo-aire">Tejo Aire:</label>
+                            <select id="tejo-aire" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-ping-pong">
+                            <label for="ping-pong">Ping Pong:</label>
+                            <select id="ping-pong" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-malabares">
+                            <label for="malabares">Malabares:</label>
+                            <select id="malabares" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                        <div class="adicional-field" id="adicional-isla-juegos">
+                            <label for="isla-juegos">Isla de Juegos:</label>
+                            <select id="isla-juegos" onchange="calculateBudget();">
+                                <option value="no">No</option>
+                                <option value="si">Sí</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="budget-result" class="budget-result" style="display: none;">
+                <h2 id="total-amount">$0 + Viáticos</h2>
+            </div>
+        </div>
+
+        <div id="config" class="tab-content">
+            <div class="config-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Concepto</th>
+                            <th>Valor</th>
+                            <th>Tipo</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Costo por regalo</td>
+                            <td><input type="number" id="config-regalo" value="2000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por unidad</td>
+                        </tr>
+                        <tr>
+                            <td>Insumos para pochoclos</td>
+                            <td><input type="number" id="config-pochoclos" value="15000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Publicidad</td>
+                            <td><input type="number" id="config-publicidad" value="5000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Mantenimiento</td>
+                            <td><input type="number" id="config-mantenimiento" value="15000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Armado/desarmado por escalera</td>
+                            <td><input type="number" id="config-escalera" value="20000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Condicional</td>
+                        </tr>
+                        <tr>
+                            <td>Costo por hora de personal</td>
+                            <td><input type="number" id="config-hora-personal" value="7000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por hora</td>
+                        </tr>
+                        <tr>
+                            <td>Ganancia mínima asegurada</td>
+                            <td><input type="number" id="config-ganancia" value="150000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Horas Personal - Kermese de Ensueño</td>
+                            <td><input type="number" id="config-horas-p1" value="9" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Total horas</td>
+                        </tr>
+                        <tr>
+                            <td>Horas Personal - Kermese Mágica</td>
+                            <td><input type="number" id="config-horas-p2" value="17.5" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Total horas</td>
+                        </tr>
+                        <tr>
+                            <td>Horas Personal - Kermese Estelar</td>
+                            <td><input type="number" id="config-horas-p3" value="28" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Total horas</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="background: var(--background-dark); font-weight: bold; color: var(--accent-color);">SERVICIOS INCLUIDOS POR PROPUESTA</td>
+                        </tr>
+                        <tr>
+                            <td>Globología</td>
+                            <td><input type="number" id="config-globologia" value="250" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por invitado</td>
+                        </tr>
+                        <tr>
+                            <td>Isla de juegos</td>
+                            <td><input type="number" id="config-isla-juegos-fijo" value="35000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (Propuestas 2 y 3)</td>
+                        </tr>
+                        <tr>
+                            <td>Combo Metegol, Tejo Aire, Ping Pong y Malabares</td>
+                            <td><input type="number" id="config-combo-juegos" value="65000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (Solo Propuesta 3)</td>
+                        </tr>
+                        <tr>
+                            <td colspan="3" style="background: var(--background-dark); font-weight: bold; color: var(--accent-color);">ADICIONALES OPCIONALES</td>
+                        </tr>
+                        <tr>
+                            <td>Juego inflable</td>
+                            <td><input type="number" id="config-juego-inflable" value="40000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Maquillaje artístico</td>
+                            <td><input type="number" id="config-maquillaje" value="300" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por invitado</td>
+                        </tr>
+                        <tr>
+                            <td>Stand algodón de azúcar</td>
+                            <td><input type="number" id="config-algodon-azucar" value="250" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por invitado</td>
+                        </tr>
+                        <tr>
+                            <td>Show burbujas</td>
+                            <td><input type="number" id="config-show-burbujas" value="20000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Show magia</td>
+                            <td><input type="number" id="config-show-magia" value="35000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo</td>
+                        </tr>
+                        <tr>
+                            <td>Glitter Strass</td>
+                            <td><input type="number" id="config-glitter-strass" value="100" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por invitado</td>
+                        </tr>
+                        <tr>
+                            <td>Pelocos</td>
+                            <td><input type="number" id="config-pelocos" value="120" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Por invitado</td>
+                        </tr>
+                        <tr>
+                            <td>Metegol</td>
+                            <td><input type="number" id="config-metegol" value="25000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (independiente)</td>
+                        </tr>
+                        <tr>
+                            <td>Tejo Aire</td>
+                            <td><input type="number" id="config-tejo-aire" value="22000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (independiente)</td>
+                        </tr>
+                        <tr>
+                            <td>Ping Pong</td>
+                            <td><input type="number" id="config-ping-pong" value="18000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (independiente)</td>
+                        </tr>
+                        <tr>
+                            <td>Malabares</td>
+                            <td><input type="number" id="config-malabares" value="28000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (independiente)</td>
+                        </tr>
+                        <tr>
+                            <td>Isla de Juegos</td>
+                            <td><input type="number" id="config-isla-juegos-adicional" value="40000" onchange="calculateBudget();"> <span class="editable-tag">Editable</span></td>
+                            <td>Fijo (adicional)</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+            <div class="admin-buttons" style="margin-top: 20px;">
+                <button onclick="saveConfigValues()">Actualizar Valores</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isAdminMode = false;
+        const GOOGLE_APPS_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyt9CLixpsWaNLpjPF8QmMr5RAJRZocUpI5S3jhEWDnjHBDFOCKaqUudpz1VvA9232-/exec";
+        const CONFIG_STORAGE_KEY = 'lunaMorenaConfig';
+
+        // Valores por defecto (se cargarán o sobrescribirán con localStorage)
+        let currentConfig = {
+            'config-regalo': 2000,
+            'config-pochoclos': 15000,
+            'config-publicidad': 5000,
+            'config-mantenimiento': 15000,
+            'config-escalera': 20000,
+            'config-hora-personal': 7000,
+            'config-ganancia': 150000,
+            'config-horas-p1': 9,
+            'config-horas-p2': 17.5,
+            'config-horas-p3': 28,
+            'config-globologia': 250, // Por invitado
+            'config-isla-juegos-fijo': 35000, // Fijo, incluido en P2 y P3
+            'config-combo-juegos': 65000, // Fijo, incluido en P3
+
+            // Adicionales opcionales
+            'config-juego-inflable': 40000, // Fijo
+            'config-maquillaje': 300, // Por invitado
+            'config-algodon-azucar': 250, // Por invitado
+            'config-show-burbujas': 20000, // Fijo
+            'config-show-magia': 35000, // Fijo
+            'config-glitter-strass': 100, // Por invitado
+            'config-pelocos': 120, // Por invitado
+            'config-metegol': 25000, // Fijo (independiente si no es P3)
+            'config-tejo-aire': 22000, // Fijo (independiente si no es P3)
+            'config-ping-pong': 18000, // Fijo (independiente si no es P3)
+            'config-malabares': 28000, // Fijo (independiente si no es P3)
+            'config-isla-juegos-adicional': 40000 // Fijo (adicional si no es P2/P3)
+        };
+
+        // Propuestas con sus nuevos nombres y detalles (info ahora está vacía ya que las descripciones fueron eliminadas del frontend)
+        const proposalConfig = {
+            '1': {
+                name: 'Kermese de Ensueño',
+                regalos: 1,
+                info: {
+                    title: '',
+                    details: []
+                },
+                adicionales: [
+                    'juego-inflable', 'maquillaje', 'algodon-azucar', 'show-burbujas', 'show-magia',
+                    'glitter-strass', 'pelocos', 'metegol', 'tejo-aire', 'ping-pong', 'malabares', 'isla-juegos'
+                ]
+            },
+            '2': {
+                name: 'Kermese Mágica',
+                regalos: 2,
+                info: {
+                    title: '',
+                    details: []
+                },
+                adicionales: [
+                    'juego-inflable', 'maquillaje', 'algodon-azucar', 'show-burbujas', 'show-magia',
+                    'glitter-strass', 'pelocos', 'metegol', 'tejo-aire', 'ping-pong', 'malabares'
+                ]
+            },
+            '3': {
+                name: 'Kermese Estelar',
+                regalos: 3,
+                info: {
+                    title: '',
+                    details: []
+                },
+                adicionales: [
+                    'juego-inflable', 'maquillaje', 'algodon-azucar', 'show-burbujas', 'show-magia',
+                    'glitter-strass', 'pelocos'
+                ]
+            }
+        };
+
+        function loadConfigValues() {
+            const savedConfig = localStorage.getItem(CONFIG_STORAGE_KEY);
+            if (savedConfig) {
+                currentConfig = JSON.parse(savedConfig);
+            }
+            // Apply loaded (or default) values to input fields
+            for (const key in currentConfig) {
+                const element = document.getElementById(key);
+                if (element) {
+                    element.value = currentConfig[key];
+                }
+            }
+        }
+
+        function saveConfigValues() {
+            for (const key in currentConfig) {
+                const element = document.getElementById(key);
+                if (element) {
+                    currentConfig[key] = parseFloat(element.value);
+                }
+            }
+            localStorage.setItem(CONFIG_STORAGE_KEY, JSON.stringify(currentConfig));
+            alert('Valores de configuración actualizados y guardados.');
+            calculateBudget(); // Recalcular con los nuevos valores guardados
+        }
+
+        function checkAdminAccess() {
+            const password = document.getElementById('admin-password').value;
+            if (!password) {
+                alert('Por favor, ingresa el código.');
+                return;
+            }
+
+            // Mostrar un mensaje de carga o deshabilitar el botón para evitar múltiples envíos
+            const adminButton = document.querySelector('.admin-access button');
+            adminButton.textContent = 'Verificando...';
+            adminButton.disabled = true;
+
+            fetch(GOOGLE_APPS_SCRIPT_URL, {
+                method: 'POST',
+                mode: 'cors', // Necesario para solicitudes entre diferentes orígenes
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ password: password })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    isAdminMode = true;
+                    document.getElementById('tabs').classList.add('admin-mode');
+                    document.getElementById('admin-access-box').style.display = 'none';
+                    document.getElementById('admin-header-buttons').style.display = 'block';
+                    switchTab('config');
+                    alert(data.message);
+                } else {
+                    alert(data.message);
+                }
+            })
+            .catch(error => {
+                console.error('Error al conectar con el servicio de autenticación:', error);
+                alert('Error al verificar la contraseña. Intenta de nuevo más tarde.');
+            })
+            .finally(() => {
+                // Habilitar el botón y restaurar el texto
+                adminButton.textContent = 'Acceder';
+                adminButton.disabled = false;
+            });
+        }
+        // --- FIN DE LA FUNCIÓN checkAdminAccess ACTUALIZADA ---
+
+        function logoutAdmin() {
+            isAdminMode = false;
+            document.getElementById('tabs').classList.remove('admin-mode');
+            document.getElementById('admin-access-box').style.display = 'block';
+            document.getElementById('admin-password').value = ''; // Limpiar campo de contraseña
+            document.getElementById('admin-header-buttons').style.display = 'none'; // Ocultar botón de cerrar sesión
+            switchTab('cliente'); // Volver a la pestaña de cliente
+            alert('Sesión de administrador cerrada.');
+        }
+
+        function switchTab(tabName) {
+            if (!isAdminMode && tabName === 'config') {
+                alert('Acceso denegado. Ingresa el código administrativo.');
+                return;
+            }
+            
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            document.getElementById(tabName).classList.add('active');
+            
+            // Activate the correct tab button
+            document.querySelector(`.tabs .tab[onclick="switchTab('${tabName}')"]`).classList.add('active');
+        }
+
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('es-AR', {
+                style: 'currency',
+                currency: 'ARS',
+                minimumFractionDigits: 0
+            }).format(amount);
+        }
+
+        function updateAdicionalesVisibility() {
+            const propuestaSeleccionada = document.getElementById('propuesta').value;
+            const adicionalesFields = document.querySelectorAll('.adicional-field');
+            
+            adicionalesFields.forEach(field => {
+                field.style.display = 'none'; // Ocultar todos por defecto
+            });
+
+            if (propuestaSeleccionada && proposalConfig[propuestaSeleccionada]) {
+                const adicionalesToShow = proposalConfig[propuestaSeleccionada].adicionales;
+                adicionalesToShow.forEach(id => {
+                    const field = document.getElementById(`adicional-${id}`);
+                    if (field) {
+                        field.style.display = 'block';
+                    }
+                });
+            }
+            calculateBudget(); // Recalcular al cambiar la visibilidad de adicionales
+        }
+
+
+        function calculateBudget() {
+            const propuesta = document.getElementById('propuesta').value;
+            const invitados = parseInt(document.getElementById('invitados').value) || 0;
+            const escalera = document.getElementById('escalera').value === 'si';
+            
+            if (!propuesta || !invitados) {
+                document.getElementById('budget-result').style.display = 'none';
+                return;
+            }
+
+            // Get values from currentConfig (which holds loaded/saved/default values)
+            const costoPorRegalo = currentConfig['config-regalo'];
+            const insumosPochoclos = currentConfig['config-pochoclos'];
+            const publicidad = currentConfig['config-publicidad'];
+            const mantenimiento = currentConfig['config-mantenimiento'];
+            const costoEscalera = currentConfig['config-escalera'];
+            const costoPorHora = currentConfig['config-hora-personal'];
+            const gananciaMinima = currentConfig['config-ganancia'];
+            
+            const horasMap = {
+                '1': currentConfig['config-horas-p1'],
+                '2': currentConfig['config-horas-p2'],
+                '3': currentConfig['config-horas-p3']
+            };
+
+            const horasPersonal = horasMap[propuesta];
+            const regalosPerInvitado = proposalConfig[propuesta].regalos;
+
+            // Calcular costos básicos
+            const costoRegalos = invitados * regalosPerInvitado * costoPorRegalo;
+            const costoPersonal = horasPersonal * costoPorHora;
+            const costoInsumos = insumosPochoclos + publicidad + mantenimiento;
+            let costoOtros = (escalera ? costoEscalera : 0) + gananciaMinima;
+
+            // Calcular servicios incluidos según propuesta
+            let serviciosIncluidos = 0;
+            
+            // Globología (siempre por invitado)
+            serviciosIncluidos += invitados * currentConfig['config-globologia']; 
+            
+            if (propuesta === '2' || propuesta === '3') {
+                serviciosIncluidos += currentConfig['config-isla-juegos-fijo']; // Fijo
+            }
+            
+            if (propuesta === '3') {
+                serviciosIncluidos += currentConfig['config-combo-juegos']; // Fijo
+            }
+
+            // Calcular adicionales seleccionados por el cliente
+            let costoAdicionales = 0;
+
+            const adicionalesFields = proposalConfig[propuesta].adicionales;
+
+            // Check each allowed additional for the selected proposal
+            if (adicionalesFields.includes('juego-inflable') && document.getElementById('juego-inflable').value === 'si') {
+                costoAdicionales += currentConfig['config-juego-inflable']; // Fijo
+            }
+            if (adicionalesFields.includes('maquillaje') && document.getElementById('maquillaje').value === 'si') {
+                costoAdicionales += invitados * currentConfig['config-maquillaje']; // Por invitado
+            }
+            if (adicionalesFields.includes('algodon-azucar') && document.getElementById('algodon-azucar').value === 'si') {
+                costoAdicionales += invitados * currentConfig['config-algodon-azucar']; // Por invitado
+            }
+            if (adicionalesFields.includes('show-burbujas') && document.getElementById('show-burbujas').value === 'si') {
+                costoAdicionales += currentConfig['config-show-burbujas']; // Fijo
+            }
+            if (adicionalesFields.includes('show-magia') && document.getElementById('show-magia').value === 'si') {
+                costoAdicionales += currentConfig['config-show-magia']; // Fijo
+            }
+            if (adicionalesFields.includes('glitter-strass') && document.getElementById('glitter-strass').value === 'si') {
+                costoAdicionales += invitados * currentConfig['config-glitter-strass']; // Por invitado
+            }
+            if (adicionalesFields.includes('pelocos') && document.getElementById('pelocos').value === 'si') {
+                costoAdicionales += invitados * currentConfig['config-pelocos']; // Por invitado
+            }
+
+            // Metegol, Tejo Aire, Ping Pong, Malabares, Isla de Juegos se cobran como adicionales FIJOS solo si NO estan incluidos en la propuesta
+            // Metegol, Tejo Aire, Ping Pong, Malabares (individualmente)
+            if (propuesta !== '3') { // If not Kermese Estelar, they are optional individual additions
+                if (adicionalesFields.includes('metegol') && document.getElementById('metegol').value === 'si') {
+                    costoAdicionales += currentConfig['config-metegol'];
+                }
+                if (adicionalesFields.includes('tejo-aire') && document.getElementById('tejo-aire').value === 'si') {
+                    costoAdicionales += currentConfig['config-tejo-aire'];
+                }
+                if (adicionalesFields.includes('ping-pong') && document.getElementById('ping-pong').value === 'si') {
+                    costoAdicionales += currentConfig['config-ping-pong'];
+                }
+                if (adicionalesFields.includes('malabares') && document.getElementById('malabares').value === 'si') {
+                    costoAdicionales += currentConfig['config-malabares'];
+                }
+            }
+            // Isla de Juegos (individualmente)
+            if (propuesta !== '2' && propuesta !== '3') { // If not Kermese Mágica or Kermese Estelar
+                if (adicionalesFields.includes('isla-juegos') && document.getElementById('isla-juegos').value === 'si') {
+                    costoAdicionales += currentConfig['config-isla-juegos-adicional'];
+                }
+            }
+
+
+            const total = costoRegalos + costoPersonal + costoInsumos + costoOtros + serviciosIncluidos + costoAdicionales;
+
+            document.getElementById('total-amount').textContent = formatCurrency(total) + ' + Viáticos';
+            document.getElementById('budget-result').style.display = 'block';
+
+            // Ocultar siempre las tarjetas de propuesta
+            document.querySelectorAll('.proposal-card').forEach(card => {
+                card.style.display = 'none';
+            });
+        }
+
+        // Initialize on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            loadConfigValues(); // Load saved values first
+            updateAdicionalesVisibility(); // Set initial visibility of additional fields
+            calculateBudget(); // Calculate initial budget
+            
+            // Set accent color variable for CSS
+            const accentColor = getComputedStyle(document.documentElement).getPropertyValue('--accent-color');
+            // Convertir el color hexadecimal a RGB para usarlo en rgba()
+            const hexToRgb = hex => {
+                const r = parseInt(hex.substring(1, 3), 16);
+                const g = parseInt(hex.substring(3, 5), 16);
+                const b = parseInt(hex.substring(5, 7), 16);
+                return `${r}, ${g}, ${b}`;
+            };
+            
+            let accentColorRgb;
+            if (accentColor.startsWith('#')) {
+                accentColorRgb = hexToRgb(accentColor);
+            } else {
+                // Fallback for named colors or other formats if needed (e.g., "blue", "rgb(x,y,z)")
+                // For simplicity, directly setting a known RGB for the current "azul claro pastel"
+                accentColorRgb = '162, 210, 255'; // RGB for #A2D2FF
+                console.warn('Could not parse RGB from accent-color. Using default RGB for #A2D2FF for rgba calculations.');
+            }
+            document.documentElement.style.setProperty('--accent-color-rgb', accentColorRgb);
+        });
+    </script>
+</body>
+</html>
